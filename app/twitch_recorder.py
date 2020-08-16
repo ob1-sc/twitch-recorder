@@ -44,10 +44,17 @@ if channel_data:
             recording_filename = "/recordings/" + twitch_channel + "-" + channel_data[0].get("id")
 
             # start streamlink process  
-            subprocess.call(["streamlink", "twitch.tv/" + twitch_channel, "best", "-o", recording_filename + ".stream", "--hls-duration", "00:01:00"])
+            subprocess.call(["streamlink", "twitch.tv/" + twitch_channel, "best", "-o", recording_filename + ".stream", "--hls-duration", "00:00:10"])
 
             print("Recording stream is done. Fixing video file.")
             subprocess.call(["ffmpeg", "-err_detect", "ignore_err", "-i", recording_filename + ".stream", "-c", "copy", recording_filename + ".mp4"])  
+            # stream = ffmpeg.input(recording_filename + ".stream")
+            # stream = ffmpeg.output(stream, recording_filename + ".mp4")
+            # stream = stream.global_args("-err_detect", "ignore_err")
+            # stream = stream.global_args("-c", "copy")
+            # ffmpeg.run(stream)
+
+            # clean up
             os.remove(recording_filename + ".stream")  
 
     except Exception as e:
