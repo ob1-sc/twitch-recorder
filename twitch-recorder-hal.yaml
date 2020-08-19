@@ -1,0 +1,60 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: twitch-recorder-hal
+  namespace: homelab
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: shared-volume
+            emptyDir: {}
+          - name: nfs-recording-volume
+            nfs:
+              server: freenas.homelab.local
+              path: /mnt/nvme/twitch-recordings
+          imagePullSecrets:
+          - name: harbor-creds
+          restartPolicy: Never
+          containers:
+          - image: harbor.homelab.local/library/stream-recorder:latest
+            name: twitch-recorder
+            env:
+            - name: TWITCH_CHANNEL
+              value: tsm_imperialhal
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: TWITCH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: twitch-creds
+                  key: client-id
+            - name: TWITCH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: twitch-creds
+                  key: client-secret
+            volumeMounts:
+            - mountPath: /streams
+              name: nfs-recording-volume
+              subPath: tsm_imperialhal
+            - mountPath: /shared
+              name: shared-volume
+          - image: harbor.homelab.local/library/stream-converter:latest
+            name: twitch-converter
+            env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            volumeMounts:
+            - mountPath: /streams
+              name: nfs-recording-volume
+              subPath: tsm_imperialhal
+            - mountPath: /shared
+              name: shared-volume

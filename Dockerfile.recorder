@@ -1,0 +1,8 @@
+FROM python:3.8-slim-buster
+
+COPY ./recorder /app
+WORKDIR /app
+VOLUME /streams
+VOLUME /shared
+RUN pip install -r requirements.txt
+CMD ["python", "-u", "./stream_recorder.py"]
