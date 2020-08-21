@@ -15,14 +15,12 @@ redis_password = os.getenv("REDIS_PASSWORD", "")
 twitch_client_id = os.getenv("TWITCH_CLIENT_ID") 
 twitch_client_secret = os.getenv("TWITCH_CLIENT_SECRET") 
 
-# login
-api_helper = TwitchApi(twitch_client_id, twitch_client_secret)
-
 request_params = {
     "user_login" : twitch_channel
 }
 
 # check if the user is online by checking the channel data
+api_helper = TwitchApi(twitch_client_id, twitch_client_secret)
 response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
 channel_data = response.json().get("data")
 
@@ -74,14 +72,19 @@ if channel_data:
                 print("Starting to record: " + recording_filename)
 
                 # start streamlink process  
-                subprocess.call(["streamlink", "twitch.tv/" + twitch_channel, "best", "-o", recording_filename + ".stream", "--hls-duration", "00:30:00"])
-
-                # call the twitch api to check if the channel is still online and to get the latest title
-                response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
-                channel_data = response.json().get("data")
+                try:
+                    subprocess.call(["streamlink", "twitch.tv/" + twitch_channel, "best", "-o", recording_filename + ".stream", "--hls-duration", "00:30:00"])
+                except Exception as e:
+                    print(f'Error occured while running streamlink: {e}')
 
                 # save the file to be converted
                 r.rpush(channel_data[0].get("id") + "-files", recording_filename)
+
+                # call the twitch api to check if the channel is still online and to get the latest title
+                api_helper = TwitchApi(twitch_client_id, twitch_client_secret)
+                response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
+                channel_data = response.json().get("data")
+
 
             print("Finished recording stream.")
 
