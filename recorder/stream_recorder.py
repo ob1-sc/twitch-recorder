@@ -94,6 +94,7 @@ if channel_data:
                 print(f'channel data: {channel_data}')
                 # if no response, wait 15 seconds and try again up to a maximum of 5 times
                 while not channel_data or (retry <= 5) :
+
                     print(f'channel data: {channel_data}')
                     print(f'Checking if channel {twitch_channel} is still online, attempt: {retry}')
                     time.sleep(15)
