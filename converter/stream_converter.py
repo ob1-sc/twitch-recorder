@@ -36,6 +36,7 @@ while os.path.exists("/shared/stream.id"):
             # clean up
             print('Cleaning up raw stream file')
             os.remove(stream_to_convert + ".stream")  
+
         except Exception as e:
             print(f'Error occured while converting stream: {e}')
 

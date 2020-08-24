@@ -28,9 +28,11 @@ if channel_data:
 
     try:
         
+        stream_id = channel_data[0].get("id")
+
         # create a marker file that contains the stream id for use by sidecars
         with open("/shared/stream.id", "w") as f:
-            f.write(channel_data[0].get("id"))
+            f.write(stream_id)
 
         r = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_password, decode_responses=True)
 
@@ -38,16 +40,15 @@ if channel_data:
         channel_data[0].pop("tag_ids")
 
         # check if we have an entry for the stream
-        channel_entry = r.hgetall(channel_data[0].get("id"))
+        channel_entry = r.hgetall(stream_id)
 
         # if no entry for the stream, make one and start recording
-        if not channel_entry or (channel_data[0].get("id") != channel_entry.get("id")):
+        if not channel_entry or (stream_id != channel_entry.get("id")):
 
-            print(f'Starting recording for - channel: {twitch_channel} - stream id: {channel_data[0].get("id")}')
+            print(f'Starting recording for - channel: {twitch_channel} - stream id: {stream_id}')
             
             # record stream entry in DB to prevent stream being recorded again
-            r.hmset(channel_data[0].get("id"), channel_data[0])
-            # record entry to ensure stream conversion starts
+            r.hmset(stream_id, channel_data[0])
 
             part = 0
             segment = 0
@@ -55,6 +56,10 @@ if channel_data:
 
             # keep recording in 30 min chunks until the stream is complete
             while channel_data:
+
+                # double check that the stream id hasn't changed, if so stop recording
+                if stream_id != channel_data[0].get("id"):
+                    break
 
                 # get the stream title and replace whitespace with underscores
                 latest_stream_title = channel_data[0].get("title").replace(" ", "_")
@@ -78,23 +83,35 @@ if channel_data:
                     print(f'Error occured while running streamlink: {e}')
 
                 # save the file to be converted
-                r.rpush(channel_data[0].get("id") + "-files", recording_filename)
+                r.rpush(stream_id + "-files", recording_filename)
 
                 # call the twitch api to check if the channel is still online and to get the latest title
                 api_helper = TwitchApi(twitch_client_id, twitch_client_secret)
                 response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
                 channel_data = response.json().get("data")
 
+                retry = 0
+                print(f'channel data: {channel_data}')
+                # if no response, wait 15 seconds and try again up to a maximum of 5 times
+                while not channel_data or (retry <= 5) :
+                    print(f'channel data: {channel_data}')
+                    print(f'Checking if channel {twitch_channel} is still online, attempt: {retry}')
+                    time.sleep(15)
+                    response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
+                    channel_data = response.json().get("data")
+                    retry += 1
+                    print(f'channel data: {channel_data}')
+                    
 
             print("Finished recording stream.")
 
             # wait until all stream recordings have been converted
-            while r.llen(channel_data[0].get("id") + "-files") != 0:
+            while r.llen(stream_id + "-files") != 0:
                 print(f'Waiting for all stream recordings to be converted before exiting')
                 time.sleep(300)
 
         else:
-            print(f'Recording already in progress for - channel: {twitch_channel} - stream id: {channel_data[0].get("id")}')
+            print(f'Recording already in progress for - channel: {twitch_channel} - stream id: {stream_id}')
 
         # delete the shared marker file
         os.remove("/shared/stream.id")
