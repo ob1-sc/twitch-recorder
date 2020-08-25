@@ -91,18 +91,14 @@ if channel_data:
                 channel_data = response.json().get("data")
 
                 retry = 0
-                print(f'channel data: {channel_data}')
                 # if no response, wait 15 seconds and try again up to a maximum of 5 times
-                while not channel_data or (retry <= 5) :
+                while not channel_data and (retry <= 5) :
 
-                    print(f'channel data: {channel_data}')
                     print(f'Checking if channel {twitch_channel} is still online, attempt: {retry}')
                     time.sleep(15)
                     response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
                     channel_data = response.json().get("data")
                     retry += 1
-                    print(f'channel data: {channel_data}')
-                    
 
             print("Finished recording stream.")
 
