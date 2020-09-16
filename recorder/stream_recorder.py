@@ -78,7 +78,7 @@ if channel_data:
 
                 # start streamlink process  
                 try:
-                    subprocess.call(["streamlink", "twitch.tv/" + twitch_channel, "best", "-o", recording_filename + ".stream", "--hls-duration", "00:30:00"])
+                    subprocess.call(["streamlink", "twitch.tv/" + twitch_channel, "best", "-o", recording_filename + ".stream", "--hls-duration", "00:30:00", "--twitch-disable-ads"])
                 except Exception as e:
                     print(f'Error occured while running streamlink: {e}')
 
