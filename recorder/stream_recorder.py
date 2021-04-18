@@ -23,7 +23,7 @@ request_params = {
 api_helper = TwitchApi(twitch_client_id, twitch_client_secret)
 response = api_helper.get("https://api.twitch.tv/helix/streams", request_params)
 channel_data = response.json().get("data")
-
+print(channel_data)
 if channel_data:
 
     try:
