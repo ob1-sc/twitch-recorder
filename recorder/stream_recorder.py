@@ -38,6 +38,7 @@ if channel_data:
 
         # delete nested list as it can't be saved
         channel_data[0].pop("tag_ids")
+        channel_data[0].pop("is_mature")
 
         # check if we have an entry for the stream
         channel_entry = r.hgetall(stream_id)
